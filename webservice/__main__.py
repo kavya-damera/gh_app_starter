@@ -62,3 +62,25 @@ if __name__ == "__main__":  # pragma: no cover
     if port is not None:
         port = int(port)
     web.run_app(app, port=port)
+@router.register("installation", action="created")
+async def repo_installation_added(event, gh, *args, **kwargs):
+    installation_id = event.data["installation"]["id"]
+    installation_access_token = await utils.get_installation_access_token(
+        gh, installation_id
+    )
+    maintainer = event.data["sender"]["login"]
+    message = f"Thanks for installing me, @{maintainer}! (I'm a bot)."
+
+    for repository in event.data["repositories_added"]:
+        url = f"/repos/{repository['full_name']}/issues/"
+        response = await gh.post(
+            url,
+            data={"title": "Mariatta's bot was installed", "body": message},
+            oauth_token=installation_access_token["token"],
+        )
+     issue_url = response["url"]
+     await gh.patch(issue_url, data={"state": "closed"},
+     oauth_token=installation_access_token["token"]
+)
+
+
